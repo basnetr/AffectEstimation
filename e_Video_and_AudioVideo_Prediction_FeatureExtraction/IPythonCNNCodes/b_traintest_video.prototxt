@@ -1,0 +1,161 @@
+name: "VideoRegression"
+layer{
+  name: "data_v"
+  type: "HDF5Data"
+  top: "data_v"
+  top: "label_v"
+  hdf5_data_param {
+    source: "c_trainList_video.txt"
+    batch_size: 32
+    shuffle: true
+  }
+  include: { phase: TRAIN }
+}
+layer{
+  name: "data_v"
+  type: "HDF5Data"
+  top: "data_v"
+  top: "label_v"
+  hdf5_data_param {
+    source: "d_testList_video.txt"
+    batch_size: 32
+  }
+  include: { phase: TEST }
+}
+layer {
+  name: "conv1_v"
+  type: "Convolution"
+  bottom: "data_v"
+  top: "conv1_v"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "relu1_v"
+  type: "ReLU"
+  bottom: "conv1_v"
+  top: "conv1_v"
+}
+layer {
+  name: "pool1_v"
+  type: "Pooling"
+  bottom: "conv1_v"
+  top: "pool1_v"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer {
+  name: "norm1_v"
+  type: "LRN"
+  bottom: "pool1_v"
+  top: "norm1_v"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+layer {
+  name: "conv2_v"
+  type: "Convolution"
+  bottom: "norm1_v"
+  top: "conv2_v"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  convolution_param {
+    num_output: 64
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "relu2_v"
+  type: "ReLU"
+  bottom: "conv2_v"
+  top: "conv2_v"
+}
+layer {
+  name: "pool2_v"
+  type: "Pooling"
+  bottom: "conv2_v"
+  top: "pool2_v"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer{
+  name: "fc1_v"
+  type: "InnerProduct"
+  bottom: "pool2_v"
+  top: "fc1_v"
+  param { lr_mult: 1 decay_mult: 1 }
+  param { lr_mult: 2 decay_mult: 0 }
+  inner_product_param {
+    num_output: 512
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "dropout1_v"
+  type: "Dropout"
+  bottom: "fc1_v"
+  top: "fc1_v"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+layer{
+  name: "fc2_v"
+  type: "InnerProduct"
+  bottom: "fc1_v"
+  top: "fc2_v"
+  param { lr_mult: 1 decay_mult: 1 }
+  param { lr_mult: 2 decay_mult: 0 }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+ }
+}
+layer{
+  name: "loss_v"
+  type: "EuclideanLoss"
+  bottom: "fc2_v"
+  bottom: "label_v"
+  top: "loss"
+}

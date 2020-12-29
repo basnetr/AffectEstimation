@@ -1,0 +1,163 @@
+name: "AudioRegression"
+layer{
+  name: "data_a"
+  type: "HDF5Data"
+  top: "data_a"
+  top: "label_a"
+  hdf5_data_param {
+    source: "c_trainList_audio.txt"
+    batch_size: 32
+    shuffle: true
+  }
+  include: { phase: TRAIN }
+}
+layer{
+  name: "data_a"
+  type: "HDF5Data"
+  top: "data_a"
+  top: "label_a"
+  hdf5_data_param {
+    source: "d_testList_audio.txt"
+    batch_size: 32
+  }
+  include: { phase: TEST }
+}
+layer {
+  name: "conv1_a"
+  type: "Convolution"
+  bottom: "data_a"
+  top: "conv1_a"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  convolution_param {
+    num_output: 128
+    kernel_h: 1
+    kernel_w: 20 #20
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "relu1_a"
+  type: "ReLU"
+  bottom: "conv1_a"
+  top: "conv1_a"
+}
+layer {
+  name: "pool1_a"
+  type: "Pooling"
+  bottom: "conv1_a"
+  top: "pool1_a"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer {
+  name: "norm1_a"
+  type: "LRN"
+  bottom: "pool1_a"
+  top: "norm1_a"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+layer {
+  name: "conv2_a"
+  type: "Convolution"
+  bottom: "norm1_a"
+  top: "conv2_a"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  convolution_param {
+    num_output: 256
+    kernel_h: 1
+    kernel_w: 10 #10
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "relu2_a"
+  type: "ReLU"
+  bottom: "conv2_a"
+  top: "conv2_a"
+}
+layer {
+  name: "pool2_a"
+  type: "Pooling"
+  bottom: "conv2_a"
+  top: "pool2_a"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer{
+  name: "fc1_a"
+  type: "InnerProduct"
+  bottom: "pool2_a"
+  top: "fc1_a"
+  param { lr_mult: 1 decay_mult: 1 }
+  param { lr_mult: 2 decay_mult: 0 }
+  inner_product_param {
+    num_output: 512
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "dropout1_a"
+  type: "Dropout"
+  bottom: "fc1_a"
+  top: "fc1_a"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+layer{
+  name: "fc2_a"
+  type: "InnerProduct"
+  bottom: "fc1_a"
+  top: "fc2_a"
+  param { lr_mult: 1 decay_mult: 1 }
+  param { lr_mult: 2 decay_mult: 0 }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+ }
+}
+layer{
+  name: "loss_a"
+  type: "EuclideanLoss"
+  bottom: "fc2_a"
+  bottom: "label_a"
+  top: "loss"
+}
